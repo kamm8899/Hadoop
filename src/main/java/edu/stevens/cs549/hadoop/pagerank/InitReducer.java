@@ -11,6 +11,14 @@ public class InitReducer extends Reducer<Text, Text, Text, Text> {
 		/* 
 		 * TODO: Output key: node+rank, value: adjacency list
 		 */
+		double initialRank = 1.0;
 
+		StringBuilder adjList = new StringBuilder();
+		for (Text val : values) {
+			if(adjList.length() > 0) {
+				adjList.append("\t");
+			}
+			adjList.append(val.toString());
+		}
 	}
 }

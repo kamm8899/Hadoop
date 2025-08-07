@@ -18,6 +18,14 @@ public class DiffMap1 extends Mapper<LongWritable, Text, Text, Text> {
 		/**
 		 *  TODO: read node-rank pair and emit: key:node, value:rank
 		 */
+		if (sections.length == 2) {
+			String node = sections[0];
+			String rank = sections[1];
+
+			// Emit the node and its rank
+			context.write(new Text(node), new Text(rank));
+		}
+
 
 	}
 

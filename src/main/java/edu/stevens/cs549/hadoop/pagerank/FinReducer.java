@@ -25,6 +25,11 @@ public class FinReducer extends Reducer<DoubleWritable, Text, Text, Text> {
 		/* 
 		 * TODO: For each value, emit: key:value, value:-rank
 		 */
+		double negativeRank = -key.get(); // Negate the rank for output
 
+		for (Text value : values) {
+			// Emit the value with the negative rank
+			context.write(value, new Text(String.valueOf(negativeRank)));
+		}
 	}
 }

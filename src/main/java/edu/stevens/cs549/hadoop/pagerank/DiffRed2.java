@@ -12,6 +12,11 @@ public class DiffRed2 extends Reducer<Text, Text, Text, Text> {
 		/* 
 		 * TODO: Compute and emit the maximum of the differences
 		 */
-
+		for (Text value : values) {
+			double currentDiff = Double.parseDouble(value.toString());
+			if (currentDiff > diff_max) {
+				diff_max = currentDiff; // updates diff_max if currentDiff is greater
+			}
+		}
 	}
 }

@@ -15,7 +15,16 @@ public class InitMapper extends Mapper<LongWritable, Text, Text, Text> {
 		 * Alternatively, output adjacency pairs that will be collected by reducer.
 		 */
 		
+		String[] sections = line.split("\t"); // Splits it into two parts. Part 1: node;rank | Part 2: adj list
+		if(parts.length >= 1){
+			String node = sections[0];
+			String adjList = sections.length > 1 ? sections[1] : ""; // Adjacency list, if present
 
+			// Emit the node with its adjacency list
+			context.write(new Text(node), new Text(adjList));
+		} else {
+			throw new IOException("Incorrect data format");
+		}
 	}
 
 }
