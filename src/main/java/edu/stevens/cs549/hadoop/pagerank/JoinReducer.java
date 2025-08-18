@@ -8,12 +8,12 @@ import org.apache.hadoop.io.*;
 public class JoinReducer extends Reducer<TextPair, Text, Text, Text> {
 
 	public void reduce(TextPair key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-		/* 
+		/*
 		 * TextPair ensures that we have values with tag "0" first, followed by tag "1"
 		 * So we know that first value is the name and second value is the rank
 		 */
 		String k = key.toString(); // Converts the key to a String
-		
+
 		// TODO values should have the vertex name and the page rank (in that order).
 		// Emit (vertex name, pagerank) or (vertex id, vertex name, pagerank)
 		// Ignore if the values do not include both vertex name and page rank
@@ -21,17 +21,16 @@ public class JoinReducer extends Reducer<TextPair, Text, Text, Text> {
 		String pageRank = null;
 
 		for (Text value : values) {
-			if(vertexName == null){
-
-			}
-			String val = value.toString();
-			if (val.startsWith("0:")) {
-				ertexName = val.substring();
-				// Extract the vertex name
-			} else if (pageRank == null){
-				pageRank = val.substring(); // Extract the page rank
+			if (vertexName == null) {
+				// First value(s) have tag "0" - vertex name
+				vertexName = value.toString();
+			} else {
+				// Subsequent value(s) have tag "1" - page rank
+				pageRank = value.toString();
+				break; // We only need one page rank value
 			}
 		}
+
 		if (vertexName != null && pageRank != null) {
 			// Emit the vertex name and page rank
 			context.write(new Text(vertexName), new Text(pageRank));
@@ -39,6 +38,6 @@ public class JoinReducer extends Reducer<TextPair, Text, Text, Text> {
 			// If we don't have both values, we ignore this key
 			context.getCounter("JoinReducer", "MissingValues").increment(1);
 		}
-
 	}
+
 }

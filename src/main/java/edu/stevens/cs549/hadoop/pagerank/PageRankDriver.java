@@ -24,13 +24,27 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 public class PageRankDriver {
 
+
 	public static final double DECAY = 0.85;
 
 	public static final double THRESHOLD = 30;
 
+
+	private static void printBanner(String jobName) {
+		// Print your required identity banner for every job invocation
+		System.out.println("=== PageRank Job: " + jobName + " ===");
+		System.out.println("Student: Jessica Kamman (your Stevens id)");
+	}
+
 	public static void main(String[] args) throws Exception {
+		// Put these at the start of main:
+		System.out.println("DEBUG args.length=" + args.length);
+		for (int i=0;i<args.length;i++) System.out.println("DEBUG arg["+i+"]: '" + args[i] + "'");
 
 		String job = "";
+		if (args.length != 0) job = args[0].trim();   // <— just trim whitespace
+
+
 		if (args.length != 0) // Checks if there is no input
 			job = args[0];
 		if (args.length == 4) // If the number of input arguments is 4
@@ -255,15 +269,17 @@ public class PageRankDriver {
 	public static void composite(String input, String output, String interim1,
 								 String interim2, String namesfile, String diffDir, int reducers) throws Exception {
 		/*
-		 * TODO Put your name here
+		 * Jessica Kamman
 		 */
-		System.out.println("Your Name (your Stevens id)");
+		System.out.println("Jessica Kamman");
 
 		int counter = 0;
 		init(input, interim1, reducers); // Initializes data
 		counter++;
+
 		double difference = 100000000; // sets ridiculously large default difference
 		int i = 0; // counter variables
+
 		while (difference >= THRESHOLD) // continues operation till difference is of specified value
 		{
 			if (i % 2 == 0) {
@@ -313,22 +329,62 @@ public class PageRankDriver {
 		{
 			// TODO: Modify this to output (vertex name, page rank) pairs instead of (vertex id, page rank)
 
-			deleteDirectory(interim2); // deletes other directory
-			counter++;
+			Configuration _conf = new Configuration();
+			FileSystem _fs = FileSystem.get(URI.create(output), _conf);
 
-			finish(interim1, output, reducers);
-			summarizeResult(output);
-		} else // for even i, interim1 is the input directory
-		{
+			String _ranksDir = interim1;  // expected final
+			if (!_fs.exists(new Path(_ranksDir))) {
+				if (_fs.exists(new Path(interim2))) {
+					_ranksDir = interim2;
+				} else {
+					throw new IOException("No final interim directory found. Tried: "
+							+ interim1 + " and " + interim2);
+				}
+			}
+
+			String _joined = output + "_joined";
+			deleteDirectory(_joined);
+			join(_ranksDir, namesfile, _joined, reducers);
+
+			deleteDirectory(output);
+			finish(_joined, output, reducers);
+
+			deleteDirectory(_joined);
+			String other = _ranksDir.equals(interim1) ? interim2 : interim1;
+			deleteDirectory(other);
+
+		} else {
 			// TODO: Modify this to output (vertex name, page rank) pairs instead of (vertex id, page rank)
 
-			deleteDirectory(interim1); // Deletes other directory
-			counter++;
+			Configuration _conf = new Configuration();
+			FileSystem _fs = FileSystem.get(URI.create(output), _conf);
 
-			finish(interim2, output, reducers);
-			summarizeResult(output);
+			// For even i, interim2 is expected final; fall back to interim1 if needed
+			String _ranksDir = interim2;
+			if (!_fs.exists(new Path(_ranksDir))) {
+				if (_fs.exists(new Path(interim1))) {
+					_ranksDir = interim1;
+				} else {
+					throw new IOException("No final interim directory found. Tried: " + interim1 + " and " + interim2);
+				}
+			}
+
+			String _joined = output + "_joined";
+			deleteDirectory(_joined);
+			join(_ranksDir, namesfile, _joined, reducers);
+
+			// Ensure the final output path is clear, then sort by rank
+			deleteDirectory(output);
+			finish(_joined, output, reducers);
+
+			// Cleanup temp and the non-final interim dir
+			deleteDirectory(_joined);
+			String other = _ranksDir.equals(interim1) ? interim2 : interim1;
+			deleteDirectory(other);
+
+
 		}
-		System.out.println();
+		System.out.println("Composite Job Completed");
 		System.out.println(counter);
 
 	}
@@ -429,6 +485,7 @@ public class PageRankDriver {
 	/*
 	 * Given an output folder, returns the first double from the first part-r-00000 file
 	 */
+	// Java
 	static double readDiffResult(String path) throws Exception {
 		double diffnum = 0.0;
 		Path diffpath = new Path(path);
@@ -437,23 +494,24 @@ public class PageRankDriver {
 
 		if (fs.exists(diffpath)) {
 			FileStatus[] ls = fs.listStatus(diffpath);
-			for (FileStatus file : ls) { // Modified file to support multiple reducer output files.
+			for (FileStatus file : ls) {
 				if (file.getPath().getName().startsWith("part-r-00")) {
 					FSDataInputStream diffin = fs.open(file.getPath());
-					BufferedReader d = new BufferedReader(
-							new InputStreamReader(diffin));
+					BufferedReader d = new BufferedReader(new InputStreamReader(diffin));
 					String diffcontent = d.readLine();
 					if (diffcontent != null) {
-						double diff_temp = Double.parseDouble(diffcontent);
-						if (diffnum < diff_temp) {
-							diffnum = diff_temp;
+						String[] parts = diffcontent.split("\t");
+						if (parts.length >= 2) {
+							double diff_temp = Double.parseDouble(parts[1]);
+							if (diffnum < diff_temp) {
+								diffnum = diff_temp;
+							}
 						}
 						d.close();
 					}
 				}
 			}
 		}
-
 		fs.close();
 		return diffnum;
 	}

@@ -9,7 +9,7 @@ public class DiffRed2 extends Reducer<Text, Text, Text, Text> {
 
 	public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 		double diff_max = 0.0; // sets diff_max to a default value
-		/* 
+		/*
 		 * TODO: Compute and emit the maximum of the differences
 		 */
 		for (Text value : values) {
@@ -18,5 +18,7 @@ public class DiffRed2 extends Reducer<Text, Text, Text, Text> {
 				diff_max = currentDiff; // updates diff_max if currentDiff is greater
 			}
 		}
+		// Output the maximum difference
+		context.write(key, new Text(String.valueOf(diff_max)));
 	}
 }

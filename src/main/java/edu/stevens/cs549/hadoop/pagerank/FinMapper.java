@@ -14,16 +14,26 @@ public class FinMapper extends Mapper<LongWritable, Text, DoubleWritable, Text> 
 		 * TODO output key:-rank, value: node
 		 * See IterMapper for hints on parsing the output of IterReducer.
 		 */
-		String[] sections = line.split("\t"); // Splits it into two parts. Part 1: node;rank | Part 2: adj list
-		if (sections.length == 2) {
-			String node = sections[0];
-			double rank = Double.parseDouble(sections[1]);
+		Counter processed = context.getCounter("FinMapper", "ProcessedLines");
+		Counter emitted = context.getCounter("FinMapper", "EmittedLines");
+		processed.increment(1);
 
-			//Output key: -rank, value: node
-			context.write(new DoubleWritable(-rank), new Text(node));
-		}
-		}
+		if (line.isEmpty()) return;
 
+		String[] sections = line.split("\t");
+		if (sections.length < 2) return;
+
+		String vertexName = sections[0].trim();
+		String rankStr = sections[1].trim();
+		System.out.println("DEBUG: Processing line: " + vertexName + " " + rankStr);
+
+		try {
+			double rank = Double.parseDouble(rankStr);
+			context.write(new DoubleWritable(-rank), new Text(vertexName));
+			emitted.increment(1);
+			System.out.println("DEBUG: Emitted: " + vertexName + " " + rank);
+		} catch (NumberFormatException e) {
+			System.err.println("ERROR: Invalid rank format for line: " + line);
+		}
 	}
-
 }

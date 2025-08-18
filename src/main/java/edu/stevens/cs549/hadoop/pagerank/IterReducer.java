@@ -17,11 +17,12 @@ public class IterReducer extends Reducer<Text, Text, Text, Text> {
 		double d = PageRankDriver.DECAY; // Decay factor
 		double rank = 0.0; // stores the decay factor in a variable rank
 
-		//Process all values for this node
+		String adjacencyList = "";
+		//Process all values for this anode
 		for (Text value : values) {
 			String val = value.toString();
 
-			if (val.startsWith("ADJ: ")) {
+			if (val.startsWith("ADJ:")) {
 				// This is the adjacency list
 				adjacencyList = val.substring(4); // Extract adjacency list
 			} else {
